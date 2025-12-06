@@ -25,7 +25,7 @@ pipeline {
 
         stage('Terraform init') {
             steps {
-                dir('ecr-terraform') {
+                dir('terraform/platform/ecr') {
                     sh 'terraform init --reconfigure'
                 }
             }
@@ -33,7 +33,7 @@ pipeline {
 
         stage('Terraform validate') {
             steps {
-                dir('ecr-terraform') {
+                dir('terraform/platform/ecr') {
                     sh 'terraform validate'
                 }
             }
@@ -41,7 +41,7 @@ pipeline {
 
         stage('Terraform plan') {
             steps {
-                dir('ecr-terraform') {
+                dir('terraform/platform/ecr') {
                     sh 'terraform plan'
                 }
             }
@@ -52,7 +52,7 @@ pipeline {
                 expression { params.ACTION == 'apply' }
             }
             steps {
-                dir('ecr-terraform') {
+                dir('terraform/platform/ecr') {
                     sh 'terraform apply -auto-approve'
                 }
             }
@@ -63,7 +63,7 @@ pipeline {
                 expression { params.ACTION == 'destroy' }
             }
             steps {
-                dir('ecr-terraform') {
+                dir('terraform/platform/ecr') {
                     sh 'terraform destroy -auto-approve'
                 }
             }
