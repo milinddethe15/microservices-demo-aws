@@ -1,5 +1,7 @@
 # Microservices Demo on AWS
 
+https://github.com/user-attachments/assets/b0317c5b-c7a5-4022-8777-803a9de3fae9
+
 This project deploys the **[Online Boutique microservices application](https://github.com/GoogleCloudPlatform/microservices-demo/)** to **AWS**. It is designed to showcase cloud-native architecture, infrastructure automation, CI/CD and platform engineering practices.
 
 ## What this project demonstrates
