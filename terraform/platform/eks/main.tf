@@ -143,6 +143,13 @@ data "aws_security_group" "selected" {
 }
 
 # ----------------------------
+# Jumphost IAM Role
+# ----------------------------
+data "aws_iam_role" "jumphost" {
+  name = var.jumphost_role_name
+}
+
+# ----------------------------
 # EKS Cluster
 # ----------------------------
 resource "aws_eks_cluster" "eks" {
@@ -214,6 +221,10 @@ data "aws_eks_cluster" "eks_oidc" {
   name = aws_eks_cluster.eks.name
 }
 
+data "aws_eks_cluster_auth" "eks" {
+  name = aws_eks_cluster.eks.name
+}
+
 data "tls_certificate" "oidc_thumbprint" {
   url = data.aws_eks_cluster.eks_oidc.identity[0].oidc[0].issuer
 }
@@ -222,4 +233,40 @@ resource "aws_iam_openid_connect_provider" "eks_oidc" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.oidc_thumbprint.certificates[0].sha1_fingerprint]
   url             = data.aws_eks_cluster.eks_oidc.identity[0].oidc[0].issuer
+}
+
+# ----------------------------
+# Kubernetes Provider + aws-auth
+# ----------------------------
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.eks_oidc.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks_oidc.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.eks.token
+}
+
+resource "kubernetes_config_map_v1" "aws_auth" {
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = aws_iam_role.worker.arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups   = ["system:bootstrappers", "system:nodes"]
+      },
+      {
+        rolearn  = data.aws_iam_role.jumphost.arn
+        username = "jumphost-admin"
+        groups   = ["system:masters"]
+      }
+    ])
+  }
+
+  depends_on = [
+    aws_eks_cluster.eks,
+    aws_eks_node_group.node-grp,
+  ]
 }
